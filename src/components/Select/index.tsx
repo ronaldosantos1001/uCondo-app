@@ -1,6 +1,7 @@
 import React from 'react';
 import { ISelectProps, Box, useTheme } from 'native-base';
 import { useController } from 'react-hook-form';
+
 import Select from './style';
 import Label from '../Label';
 
@@ -22,8 +23,8 @@ export default function CustomSelect({
   label,
   ...props
 }: SelectProps): JSX.Element {
-  const theme = useTheme();
-  const { field, fieldState } = useController({
+  const { colors } = useTheme();
+  const { field } = useController({
     name,
     rules: {
       required: props.isRequired,
@@ -35,11 +36,14 @@ export default function CustomSelect({
   return (
     <>
       {label && <Label>{label}</Label>}
-      <Box bg={theme.colors.custom.white} borderRadius={10} overflow="hidden">
+      <Box bg={colors.custom.white} borderRadius={10} overflow="hidden">
         <Select
           {...props}
           variant="unstyled"
-          onValueChange={(e) => [onChange(e), props.onValueChange?.(e)]}
+          onValueChange={(e) => {
+            onChange(e);
+            props.onValueChange?.(e);
+          }}
           selectedValue={value.toString()}
           ref={ref}
         >

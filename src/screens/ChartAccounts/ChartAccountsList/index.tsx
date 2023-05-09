@@ -5,7 +5,7 @@ import { gql, useQuery } from '@apollo/client';
 import { useForm, FormProvider } from 'react-hook-form';
 import { IChartAccount } from '../../../core/graphQL/cache/chartOfAccounts/types';
 import useDebounce from '../../../core/hooks/debounce';
-import { SearchInput } from './styles';
+import { StyledInput } from './styles';
 import ChartAccountsItem from './ChartAccountsItem';
 
 export default function ChartAccountsList(): JSX.Element {
@@ -48,7 +48,7 @@ export default function ChartAccountsList(): JSX.Element {
             borderRadius={100}
             overflow="hidden"
           >
-            <SearchInput
+            <StyledInput
               name="search"
               placeholder="Pesquisar conta"
               InputLeftElement={

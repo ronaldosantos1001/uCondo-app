@@ -1,12 +1,14 @@
 import React from 'react';
-import { IFormControlLabelProps, FormControl, useTheme } from 'native-base';
+import { FormControl, IFormControlLabelProps, useTheme } from 'native-base';
 
-export default function Label(props: IFormControlLabelProps): JSX.Element {
-  const theme = useTheme();
+interface LabelProps extends IFormControlLabelProps {}
+
+export default function Label(props: LabelProps): JSX.Element {
+  const { colors } = useTheme();
+  const { children, ...rest } = props;
   return (
-    <FormControl.Label
-      _text={{ color: theme.colors.custom.label }}
-      {...props}
-    />
+    <FormControl.Label _text={{ color: colors.custom.label }} {...rest}>
+      {children}
+    </FormControl.Label>
   );
 }

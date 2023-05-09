@@ -65,7 +65,7 @@ export default function ChartAccountsItem({
         <Alert
           onConfirmation={onRemove}
           isOpen={isConfirmationOpened}
-          toggle={toggleConfirmation}
+          onClose={toggleConfirmation}
           title={
             <Center>
               <Feather

@@ -1,18 +1,16 @@
 import { useCallback, useRef } from 'react';
 
-interface UseDebounce {
-  delay?: number;
+interface UseDebounceOptions {
+delay?: number;
 }
 
-type Debouncer = (cb: Function) => void;
+type DebounceFunction = (callback: Function) => void;
 
-export default function useDebounce({
-  delay = 1000,
-}: UseDebounce = {}): Debouncer {
-  const ref = useRef<number>();
+export default function useDebounce({ delay = 1000 }: UseDebounceOptions = {}): DebounceFunction {
+const timeoutRef = useRef<number>();
 
-  return useCallback((cb) => {
-    clearTimeout(ref.current);
-    ref.current = setTimeout(cb, delay);
-  }, []);
+return useCallback((callback) => {
+clearTimeout(timeoutRef.current);
+timeoutRef.current = setTimeout(callback, delay);
+}, [delay]);
 }

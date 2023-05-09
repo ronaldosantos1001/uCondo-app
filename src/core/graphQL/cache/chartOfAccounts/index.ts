@@ -1,3 +1,4 @@
+
 import { FieldPolicy, makeVar } from '@apollo/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { v4 } from 'uuid';
@@ -7,39 +8,46 @@ const STORAGE_KEY = 'chartOfAccounts';
 
 export const chartAccounts = makeVar<IChartAccount[]>([]);
 
+function filterChartAccounts(chartAccounts: IChartAccount[], variables: any) {
+  let values = [...chartAccounts];
+
+  if (typeof variables?.acceptRelease !== 'undefined') {
+    values = values.filter(
+      (x) => x.acceptRelease === variables.acceptRelease,
+    );
+  }
+
+  if (variables?.search?.length) {
+    values = values.filter(
+      (x) =>
+        x.code.startsWith(variables.search) ||
+        x.name.startsWith(variables.search),
+    );
+  }
+
+  values.sort(sortByCode);
+
+  return values;
+}
+
 export default {
   chartAccounts: {
     read: (_, { variables }) => {
-      let values = chartAccounts();
-
-      if (typeof variables?.acceptRelease !== 'undefined') {
-        values = values.filter(
-          (x) => x.acceptRelease === variables.acceptRelease,
-        );
-      }
-
-      if (variables?.search?.length) {
-        values = values.filter(
-          (x) =>
-            x.code.startsWith(variables.search) ||
-            x.name.startsWith(variables.search),
-        );
-      }
-
-      values.sort(sortByCode);
-
+      const values = filterChartAccounts(chartAccounts(), variables);
       return values;
     },
   },
   chartAccount: {
     read: (_, { variables }) => {
-      return chartAccounts().find((x) => x.id === variables?.id);
+      const chartAccount = chartAccounts().find((x) => x.id === variables?.id);
+      return chartAccount;
     },
   },
 } as {
   chartAccounts: FieldPolicy<IChartAccount[]>;
   chartAccount: FieldPolicy<IChartAccount>;
 };
+
 
 export class ChartAccount implements IChartAccount {
   id: string;
@@ -61,8 +69,7 @@ export class ChartAccount implements IChartAccount {
     this.validate();
   }
 
-  validate() {
-
+  validate(): void {
     const code = this.code.substring(this.code.lastIndexOf('.') + 1);
     if (Number(code) > 999) {
       throw new Error('Código inválido');
@@ -86,7 +93,7 @@ export class ChartAccount implements IChartAccount {
     }
   }
 
-  static nextValidCode(parentId: string) {
+  static nextValidCode(parentId: string): string {
     const stored = chartAccounts()
       .filter((x) => x.parentId === parentId)
       .sort(sortByCode);
@@ -103,62 +110,59 @@ export class ChartAccount implements IChartAccount {
       splitted[splitted.length - 1] = `${lastPart + 1}`;
       return splitted.join('.');
     }
+
     const parent = chartAccounts().find((x) => x.id === parentId);
     return `${parent?.code}.1`;
   }
 }
 
-const flush = () =>
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(chartAccounts()));
+const flush = async () => {
+  try {
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(chartAccounts()));
+  } catch (error) {
+    throw new Error('Erro ao gravar contas');
+  }
+};
 
 export const add = async (value: Partial<IChartAccount>) => {
-  const newValue = [
-    ...chartAccounts(),
-    new ChartAccount(value as IChartAccount),
-  ];
-  chartAccounts(newValue);
+  const newValue = new ChartAccount(value as IChartAccount);
+  const stored = chartAccounts();
+  
+  if (stored.some((x) => x.code === newValue.code)) {
+    throw new Error('Código já cadastrado');
+  }
+
+  stored.push(newValue);
+  chartAccounts(stored);
   await flush();
-  return newValue;
+  
+  return stored;
 };
 
-const _delete = (id: string) => {
-  const storedIndex = chartAccounts().findIndex((x) => x.id === id);
 
-  if (storedIndex < 0) {
-    return;
-  }
+const deleteChartAccount = (id: string, list: IChartAccount[]): void => {
+  const accountIndex = list.findIndex((account) => account.id === id);
+  if (accountIndex < 0) return;
+
+  const [removed] = list.splice(accountIndex, 1);
+
+  const children = list.filter((account) => account.parentId === removed.id);
+  children.forEach((child) => deleteChartAccount(child.id, list));
+};
+
+export const remove = async (id: string): Promise<void> => {
   const list = chartAccounts();
-
-  const [removed] = list.splice(storedIndex, 1);
+  deleteChartAccount(id, list);
   chartAccounts(list);
-
-  const children = list.filter((x) => x.parentId === removed.id);
-
-  children.forEach((child) => _delete(child.id));
-};
-
-export const remove = async (id: string) => {
-  _delete(id);
   await flush();
 };
 
-const sortByCode = (a: IChartAccount, b: IChartAccount) => {
-  if (a.code < b.code) {
-    return -1;
-  }
-  if (a.code > b.code) {
-    return 1;
-  }
-  return 0;
-};
+
+const sortByCode = (a: IChartAccount, b: IChartAccount) => a.code.localeCompare(b.code);
 
 (async () => {
-
   const stored = await AsyncStorage.getItem(STORAGE_KEY);
-
-  if (!stored?.length) {
-    return;
+  if (stored) {
+    chartAccounts(JSON.parse(stored));
   }
-
-  chartAccounts(JSON.parse(stored));
 })();

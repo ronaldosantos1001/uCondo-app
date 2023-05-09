@@ -1,55 +1,64 @@
 import React, { useRef } from 'react';
 import { Modal } from 'react-native';
-import { Button, Stack, useTheme, Text, Box, Center } from 'native-base';
+import { Button, Text, Box, Center, useTheme, VStack } from 'native-base';
 
-interface AlertProps {
+interface CustomAlertModalProps {
   isOpen?: boolean;
-  toggle: (val?: boolean) => void;
+  onClose: (val?: boolean) => void;
   onConfirmation: () => void;
   title: string | JSX.Element;
   message: string | JSX.Element;
 }
 
-export default function CustomAlert({
-  isOpen,
-  toggle,
+export default function CustomAlertModal({
+  isOpen = false,
+  onClose,
   onConfirmation,
   title,
   message,
-}: AlertProps): JSX.Element {
+}: CustomAlertModalProps): JSX.Element {
   const cancelRef = useRef(null);
-  const theme = useTheme();
+  // O cancelRef é utilizado para poder fechar o modal ao clicar no botão "Não!"
+
+  const { colors } = useTheme();
 
   return (
     <Modal
       transparent
       visible={isOpen}
       animationType="slide"
-      onRequestClose={() => toggle(false)}
+      onRequestClose={() => onClose(false)}
     >
       <Center pt={40}>
-        <Box bgColor={theme.colors.custom.white} p={10} borderRadius={20}>
-          <Stack space={4}>
-            {title}
-            {message}
+        <Box bgColor={colors.custom.white} p={10} borderRadius={20}>
+          <VStack space={4}>
+            {typeof title === 'string' ? (
+              <Text fontSize="xl" fontWeight="bold">
+                {title}
+              </Text>
+            ) : (
+              title
+            )}
+            {typeof message === 'string' ? (
+              <Text>{message}</Text>
+            ) : (
+              message
+            )}
             <Center>
-              <Button.Group>
+              <Button.Group size="sm">
                 <Button
                   ref={cancelRef}
-                  onPress={() => toggle()}
+                  onPress={() => onClose()}
                   variant="ghost"
                 >
-                  <Text color={theme.colors.custom.danger}> Não!</Text>
+                  <Text color={colors.custom.danger}> Não!</Text>
                 </Button>
-                <Button
-                  onPress={onConfirmation}
-                  bgColor={theme.colors.custom.danger}
-                >
+                <Button onPress={onConfirmation} bgColor={colors.custom.danger}>
                   Com certeza
                 </Button>
               </Button.Group>
             </Center>
-          </Stack>
+          </VStack>
         </Box>
       </Center>
     </Modal>
